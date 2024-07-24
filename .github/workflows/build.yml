@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+env:
+  APP_NAME: rustwester
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -54,8 +57,44 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: Rename binary
+        run: |
+          if [[ "${{ matrix.target }}" == *"-pc-windows"* ]]; then
+          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }}.exe target/${{ matrix.target }}/release/${{ env.APP_NAME }}-${{ matrix.target }}.exe
+          else
+          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }} target/${{ matrix.target }}/release/${{ env.APP_NAME }}-${{ matrix.target }}
+          fi
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}-artifact
           path: target/${{ matrix.target }}/release/
+
+  release:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from Cargo.toml
+        id: version
+        run: echo "VERSION=$(cat Cargo.toml | grep version | head -1 | awk -F' ' '{print $3}' | sed 's/\"//g')" >> $GITHUB_OUTPUT
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: "**-artifact"
+          path: ./artifacts
+
+      - name: Upload Release
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          artifacts: ./artifacts/${{ env.APP_NAME }}-*
+          token: ${{ github.token }}
+          bodyFile: README.md
+          tag: ${{ steps.version.outputs.RELEASE_VERSION }}
+          makeLatest: true
+          name: ${{ github.event.repository.name }}-v${{ steps.version.outputs.RELEASE_VERSION }}
