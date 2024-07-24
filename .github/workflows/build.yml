@@ -94,7 +94,7 @@ jobs:
       - name: Upload Release
         uses: ncipollo/release-action@v1.14.0
         with:
-          artifacts: ./artifacts/${{ env.APP_NAME }}-*
+          artifacts: ./artifacts/*/${{ env.APP_NAME }}-*
           token: ${{ github.token }}
           bodyFile: README.md
           tag: v${{ steps.version.outputs.VERSION }}
