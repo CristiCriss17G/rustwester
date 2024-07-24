@@ -95,6 +95,6 @@ jobs:
           artifacts: ./artifacts/${{ env.APP_NAME }}-*
           token: ${{ github.token }}
           bodyFile: README.md
-          tag: ${{ steps.version.outputs.RELEASE_VERSION }}
+          tag: ${{ steps.version.outputs.VERSION }}
           makeLatest: true
-          name: ${{ github.event.repository.name }}-v${{ steps.version.outputs.RELEASE_VERSION }}
+          name: ${{ github.event.repository.name }}-v${{ steps.version.outputs.VERSION }}
