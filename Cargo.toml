@@ -1,9 +1,8 @@
 [package]
 name = "rustwester"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ['Cristian Iordachescu <cristian.iordachescu@ivfuture.uk>']
-rust-version = "1.79"
 
 [profile.release]
 debug = false # This strips the debug information

@@ -17,6 +17,9 @@ jobs:
 
     strategy:
       matrix:
+        version:
+          - 1.79.0
+          - 1.75.0
         target:
           - x86_64-unknown-linux-gnu
           - i686-unknown-linux-gnu
@@ -35,24 +38,24 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.version }}
           targets: ${{ matrix.target }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-registry-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.target }}-cargo-build-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-
 
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
@@ -60,15 +63,15 @@ jobs:
       - name: Rename binary
         run: |
           if [[ "${{ matrix.target }}" == *"-pc-windows"* ]]; then
-          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }}.exe target/${{ matrix.target }}/release/${{ env.APP_NAME }}-${{ matrix.target }}.exe
+          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }}.exe target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}.exe
           else
-          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }} target/${{ matrix.target }}/release/${{ env.APP_NAME }}-${{ matrix.target }}
+          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }} target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}
           fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}-artifact
+          name: rust-${{ matrix.version }}-${{ matrix.target }}-artifact
           path: target/${{ matrix.target }}/release/
 
   release:
