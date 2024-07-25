@@ -2,6 +2,12 @@
 
 Simple rust cross platform executable to run a debugging web server
 
+> [!WARNING]
+>
+> Version with Rust 1.75 is for windows 7
+>
+> Version with Rust stable is for windows 8+
+
 ## Usage
 
 ```bash
