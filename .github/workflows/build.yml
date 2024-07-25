@@ -58,9 +58,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-tests-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-tests-
+            ${{ runner.os }}-${{ matrix.version }}-cargo-registry-
 
       - name: Cache cargo build
         uses: actions/cache@v4
@@ -118,9 +118,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-
+            ${{ runner.os }}-${{ matrix.version }}-cargo-registry-
 
       - name: Cache cargo build
         uses: actions/cache@v4
