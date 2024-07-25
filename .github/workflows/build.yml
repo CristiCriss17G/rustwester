@@ -15,13 +15,15 @@ env:
 
 jobs:
   tests:
-    runs-on: ${{ matrix.os }}
-
     strategy:
       matrix:
         version:
           - stable
           - 1.75.0
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -39,6 +41,8 @@ jobs:
             target: x86_64-pc-windows-msvc
           - os: windows-latest
             target: i686-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout code
@@ -58,30 +62,31 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-tests-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-tests-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-tests-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-tests-
 
       - name: Test
         run: cargo test --target ${{ matrix.target }}
 
   build:
-    runs-on: ${{ matrix.os }}
-    needs: tests
-
     strategy:
       matrix:
         version:
           - stable
           - 1.75.0
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -99,6 +104,9 @@ jobs:
             target: x86_64-pc-windows-msvc
           - os: windows-latest
             target: i686-pc-windows-msvc
+
+    runs-on: ${{ matrix.os }}
+    needs: tests
 
     steps:
       - name: Checkout code
@@ -133,13 +141,15 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
-      - name: Rename binary
+      - name: Rename binary (Linux and macOS)
+        if: runner.os != 'Windows'
         run: |
-          if [[ "${{ matrix.target }}" == *"-pc-windows"* ]]; then
-          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }}.exe target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}.exe
-          else
           mv target/${{ matrix.target }}/release/${{ env.APP_NAME }} target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}
-          fi
+
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mv target\${{ matrix.target }}\release\${{ env.APP_NAME }}.exe target\${{ matrix.target }}\release\${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
