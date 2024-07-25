@@ -4,78 +4,156 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     branches:
       - main
+      - dev
+  workflow_dispatch:
 
 env:
   APP_NAME: rustwester
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
+  tests:
     strategy:
       matrix:
         version:
-          - 1.79.0
+          - stable
           - 1.75.0
-        target:
-          - x86_64-unknown-linux-gnu
-          - i686-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
-          - i686-unknown-linux-musl
-          - x86_64-pc-windows-gnu
-          - i686-pc-windows-gnu
+        platform:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: i686-unknown-linux-musl
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform.os }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       - name: Set up system
+        if: startsWith(runner.os, 'Linux')
         run: sudo apt update && sudo apt upgrade -y && sudo apt install -y build-essential gcc-multilib mingw-w64 clang lld musl musl-tools
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.version }}
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.platform.target }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-
+            ${{ runner.os }}-${{ matrix.version }}-cargo-registry-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-tests-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-tests-
+
+      - name: Test
+        run: cargo test --target ${{ matrix.platform.target }}
+
+  build:
+    if: github.event_name == 'push'
+    strategy:
+      matrix:
+        version:
+          - stable
+          - 1.75.0
+        platform:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-latest
+            target: i686-unknown-linux-musl
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+
+    runs-on: ${{ matrix.platform.os }}
+    needs: tests
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up system
+        if: startsWith(runner.os, 'Linux')
+        run: sudo apt update && sudo apt upgrade -y && sudo apt install -y build-essential gcc-multilib mingw-w64 clang lld musl musl-tools
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.version }}
+          targets: ${{ matrix.platform.target }}
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-${{ matrix.version }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.version }}-cargo-registry-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.platform.target }}
 
-      - name: Rename binary
+      - name: Rename binary (Linux and macOS)
+        if: runner.os != 'Windows'
         run: |
-          if [[ "${{ matrix.target }}" == *"-pc-windows"* ]]; then
-          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }}.exe target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}.exe
-          else
-          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }} target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}
-          fi
+          mv target/${{ matrix.platform.target }}/release/${{ env.APP_NAME }} target/${{ matrix.platform.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.platform.target }}
+
+      - name: Rename binary (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          mv -Force target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}.exe target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.platform.target }}.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rust-${{ matrix.version }}-${{ matrix.target }}-artifact
-          path: target/${{ matrix.target }}/release/
+          name: rust-${{ matrix.version }}-${{ matrix.platform.target }}-artifact
+          path: target/${{ matrix.platform.target }}/release/
+          retention-days: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main') && 1 || 0 }}
 
   release:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
     permissions:
