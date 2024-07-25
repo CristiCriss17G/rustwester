@@ -8,6 +8,8 @@ ARG APP_NAME=rustwester
 # Create a stage for building the application.
 FROM rust:${RUST_VERSION}-alpine${ALPINE_VERSION} AS build
 ARG APP_NAME
+ARG TARGET=x86_64-unknown-linux-musl
+
 WORKDIR /app
 
 # Install host build dependencies.
@@ -19,7 +21,7 @@ RUN mkdir src && touch src/main.rs && cargo fetch --locked
 
 COPY . .
 
-RUN cargo build --locked --release && cp ./target/release/$APP_NAME /bin/server
+RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/release/$APP_NAME /bin/server
 
 ################################################################################
 # Create a new stage for running the application that contains the minimal
@@ -33,7 +35,7 @@ RUN cargo build --locked --release && cp ./target/release/$APP_NAME /bin/server
 # (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
 FROM alpine:3.20 AS final
 LABEL org.opencontainers.image.maintainer="Cristian Iordachescu <iordachescu1996@outlook.com>"
-LABEL org.opencontainers.image.version="0.1.0"
+LABEL org.opencontainers.image.version="0.1.2"
 LABEL org.opencontainers.image.title="Rustwester"
 LABEL org.opencontainers.image.description="This is a Dockerfile for running rustwester. For more information visit run with --help."
 

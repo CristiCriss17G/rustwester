@@ -1,3 +1,5 @@
+#[cfg(test)]
+mod tests;
 mod utils;
 
 use actix_web::middleware::Logger;
@@ -110,7 +112,7 @@ async fn manual_hello(req: HttpRequest, data: web::Data<AppState>) -> impl Respo
 
     if data.json {
         HttpResponse::Ok().json(json!({
-            "hello": "world",
+            "hey": "there",
             "hostname": gethostname().to_string_lossy().to_string(),
             "user_agent": user_agent
         }))
@@ -118,6 +120,7 @@ async fn manual_hello(req: HttpRequest, data: web::Data<AppState>) -> impl Respo
         let hostname = gethostname().to_string_lossy().to_string();
         let html_response = data
             .html_hello
+            .replace("Hello world", "Hey there")
             .replace("{{hostname}}", &hostname)
             .replace("{{user_agent}}", user_agent)
             .replace("{{echo}}", "<hr />");
