@@ -20,11 +20,7 @@ jobs:
         version:
           - stable
           - 1.75.0
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        include:
+        platform:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - os: ubuntu-latest
@@ -36,13 +32,13 @@ jobs:
           - os: macos-latest
             target: x86_64-apple-darwin
           - os: macos-latest
-            target: i686-apple-darwin
+            target: aarch64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
           - os: windows-latest
             target: i686-pc-windows-msvc
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform.os }}
 
     steps:
       - name: Checkout code
@@ -56,26 +52,26 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.version }}
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.platform.target }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-tests-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-tests-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-tests-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-tests-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-tests-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-tests-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-tests-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-tests-
 
       - name: Test
-        run: cargo test --target ${{ matrix.target }}
+        run: cargo test --target ${{ matrix.platform.target }}
 
   build:
     strategy:
@@ -83,11 +79,7 @@ jobs:
         version:
           - stable
           - 1.75.0
-        os:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-        include:
+        platform:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
           - os: ubuntu-latest
@@ -99,13 +91,13 @@ jobs:
           - os: macos-latest
             target: x86_64-apple-darwin
           - os: macos-latest
-            target: i686-apple-darwin
+            target: aarch64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-msvc
           - os: windows-latest
             target: i686-pc-windows-msvc
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.platform.os }}
     needs: tests
 
     steps:
@@ -120,42 +112,42 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.version }}
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.platform.target }}
 
       - name: Cache cargo registry
         uses: actions/cache@v4
         with:
           path: ~/.cargo/registry
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-registry-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-registry-
 
       - name: Cache cargo build
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.target }}-cargo-build-
+            ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.platform.target }}
 
       - name: Rename binary (Linux and macOS)
         if: runner.os != 'Windows'
         run: |
-          mv target/${{ matrix.target }}/release/${{ env.APP_NAME }} target/${{ matrix.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}
+          mv target/${{ matrix.platform.target }}/release/${{ env.APP_NAME }} target/${{ matrix.platform.target }}/release/${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.platform.target }}
 
       - name: Rename binary (Windows)
         if: runner.os == 'Windows'
         run: |
-          mv target\${{ matrix.target }}\release\${{ env.APP_NAME }}.exe target\${{ matrix.target }}\release\${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.target }}.exe
+          mv target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}.exe target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.platform.target }}.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: rust-${{ matrix.version }}-${{ matrix.target }}-artifact
-          path: target/${{ matrix.target }}/release/
+          name: rust-${{ matrix.version }}-${{ matrix.platform.target }}-artifact
+          path: target/${{ matrix.platform.target }}/release/
           retention-days: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main' && 1) || 0 }}
 
   release:
