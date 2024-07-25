@@ -141,7 +141,7 @@ jobs:
       - name: Rename binary (Windows)
         if: runner.os == 'Windows'
         run: |
-          mv target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}.exe target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.platform.target }}.exe
+          mv -Force target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}.exe target\${{ matrix.platform.target }}\release\${{ env.APP_NAME }}-rust${{ matrix.version }}-${{ matrix.platform.target }}.exe
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
