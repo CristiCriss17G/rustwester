@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - dev
+  workflow_dispatch:
 
 env:
   APP_NAME: rustwester
@@ -74,6 +75,7 @@ jobs:
         run: cargo test --target ${{ matrix.platform.target }}
 
   build:
+    if: github.event_name == 'push'
     strategy:
       matrix:
         version:
@@ -148,7 +150,7 @@ jobs:
         with:
           name: rust-${{ matrix.version }}-${{ matrix.platform.target }}-artifact
           path: target/${{ matrix.platform.target }}/release/
-          retention-days: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main' && 1) || 0 }}
+          retention-days: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main') && 1 || 0 }}
 
   release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
