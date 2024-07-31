@@ -133,7 +133,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.platform.target }}
+        run: cargo build --locked --release --target ${{ matrix.platform.target }}
 
       - name: Rename binary (Linux and macOS)
         if: runner.os != 'Windows'

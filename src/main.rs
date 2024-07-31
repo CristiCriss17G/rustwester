@@ -2,9 +2,10 @@
 mod tests;
 mod utils;
 
-use actix_web::middleware::Logger;
+use actix_web::http::header;
+use actix_web::middleware::{DefaultHeaders, Logger};
 use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
-use clap::Parser;
+use clap::{crate_version, Parser};
 use gethostname::gethostname;
 use log::{info, LevelFilter};
 use serde_json::json;
@@ -150,7 +151,7 @@ async fn main() -> Result<(), WesterError> {
 
     // Clone cli.json to move it into the closure
     let json_data = cli.json.clone();
-    const HTML_HELLO: &str = include_str!("../hello.html");
+    const HTML_HELLO: &str = include_str!("hello.html");
 
     HttpServer::new(move || {
         App::new()
@@ -158,6 +159,23 @@ async fn main() -> Result<(), WesterError> {
                 json: json_data,
                 html_hello: HTML_HELLO.to_string(),
             }))
+            .wrap(
+                DefaultHeaders::new()
+                    .add(("X-Version", crate_version!()))
+                    .add((
+                        header::CONTENT_TYPE,
+                        format!(
+                            "{}; charset=utf-8",
+                            if json_data {
+                                "application/json"
+                            } else {
+                                "text/html"
+                            }
+                        ),
+                    ))
+                    .add((header::SERVER, "rustwester"))
+                    .add(("X-Powered-By", "actix-web")),
+            )
             .wrap(Logger::default())
             .service(hello)
             .service(echo)
