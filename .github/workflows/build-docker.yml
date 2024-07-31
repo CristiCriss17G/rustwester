@@ -2,7 +2,7 @@ name: Docker Image CI
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "dev"]
   pull_request:
     branches: ["main"]
   workflow_dispatch:
@@ -62,7 +62,7 @@ jobs:
             ${{ env.SHA_TAG }}
             ${{ env.BRANCH_NAME }}-${{ env.SHA_TAG }}-${{ env.DATE_TAG }}
             ${{ steps.version.outputs.VERSION }}
-            "latest"
+            ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'latest' || 'pre-release' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
