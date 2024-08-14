@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-ARG RUST_VERSION=1.79
+ARG RUST_VERSION=1.80
 ARG ALPINE_VERSION=3.20
 ARG APP_NAME=rustwester
 
@@ -35,7 +35,7 @@ RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/r
 # (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
 FROM alpine:3.20 AS final
 LABEL org.opencontainers.image.maintainer="Cristian Iordachescu <iordachescu1996@outlook.com>"
-LABEL org.opencontainers.image.version="0.2.0"
+LABEL org.opencontainers.image.version="0.2.1"
 LABEL org.opencontainers.image.title="Rustwester"
 LABEL org.opencontainers.image.description="This is a Dockerfile for running rustwester. For more information visit run with --help."
 
@@ -56,6 +56,8 @@ USER appuser
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
+
+# ENV LOG_FILE=/var/log/rustwester.log
 
 # Expose the port that the application listens on.
 EXPOSE 9999
