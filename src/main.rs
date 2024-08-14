@@ -9,7 +9,9 @@ use clap::{crate_version, Parser};
 use gethostname::gethostname;
 use log::{info, LevelFilter};
 use serde_json::json;
-use utils::{logging::log_init, structs::WesterError};
+use std::path::PathBuf;
+use utils::logging::log_init;
+use utils::structs::Result;
 
 #[derive(Parser, PartialEq)]
 #[command(name = "rustwester", author, version, about, long_about = None)]
@@ -34,6 +36,10 @@ struct Cli {
     /// Show logging information as json
     #[arg(long, env, global = true)]
     use_json_logging: bool,
+
+    /// Log file location
+    #[arg(long, env, global = true)]
+    log_file: Option<PathBuf>,
 }
 
 struct AppState {
@@ -72,7 +78,7 @@ async fn echo(
     req: HttpRequest,
     req_body: web::Json<serde_json::Value>,
     data: web::Data<AppState>,
-) -> Result<impl Responder, WesterError> {
+) -> Result<impl Responder> {
     let user_agent = req
         .headers()
         .get(http::header::USER_AGENT)
@@ -130,7 +136,7 @@ async fn manual_hello(req: HttpRequest, data: web::Data<AppState>) -> impl Respo
 }
 
 #[tokio::main]
-async fn main() -> Result<(), WesterError> {
+async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     // Initialize the logger
@@ -140,7 +146,7 @@ async fn main() -> Result<(), WesterError> {
         _ => LevelFilter::Trace,
     };
 
-    log_init(log_level, cli.use_json_logging);
+    log_init(log_level, cli.use_json_logging, cli.log_file)?;
 
     info!("Starting up...");
     if log_level > LevelFilter::Info {
