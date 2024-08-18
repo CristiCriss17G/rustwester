@@ -6,7 +6,7 @@ use serde_json::json;
 #[actix_web::test]
 async fn test_hello_json() {
     let app_state = web::Data::new(AppState {
-        json: true,
+        allow_json: true,
         html_hello: String::new(),
     });
 
@@ -26,7 +26,7 @@ async fn test_hello_json() {
 #[actix_web::test]
 async fn test_hello_html() {
     let app_state = web::Data::new(AppState {
-        json: false,
+        allow_json: false,
         html_hello: String::from("<html><body>{{hostname}} {{user_agent}} {{echo}}</body></html>"),
     });
 
@@ -47,7 +47,7 @@ async fn test_hello_html() {
 #[actix_web::test]
 async fn test_echo_json() {
     let app_state = web::Data::new(AppState {
-        json: true,
+        allow_json: true,
         html_hello: String::new(),
     });
 
@@ -71,7 +71,7 @@ async fn test_echo_json() {
 #[actix_web::test]
 async fn test_echo_html() {
     let app_state = web::Data::new(AppState {
-        json: false,
+        allow_json: false,
         html_hello: String::from("<html><body>{{hostname}} {{user_agent}} {{echo}}</body></html>"),
     });
 
@@ -96,7 +96,7 @@ async fn test_echo_html() {
 #[actix_web::test]
 async fn test_manual_hello_json() {
     let app_state = web::Data::new(AppState {
-        json: true,
+        allow_json: true,
         html_hello: String::new(),
     });
 
@@ -123,7 +123,7 @@ async fn test_manual_hello_json() {
 #[actix_web::test]
 async fn test_manual_hello_html() {
     let app_state = web::Data::new(AppState {
-        json: false,
+        allow_json: false,
         html_hello: String::from(
             "<html><body>Hello world {{hostname}} {{user_agent}} {{echo}}</body></html>",
         ),
