@@ -36,6 +36,7 @@ jobs:
         with:
           toolchain: ${{ matrix.version }}
           targets: x86_64-unknown-linux-gnu
+          components: clippy, rustfmt
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -95,6 +96,7 @@ jobs:
         with:
           toolchain: ${{ matrix.version }}
           targets: ${{ matrix.platform.target }}
+          components: clippy, rustfmt
 
       - name: Cache cargo registry
         uses: actions/cache@v4
