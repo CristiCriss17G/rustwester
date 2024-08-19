@@ -28,6 +28,6 @@ fern = { version = "0.6.2", features = ["colored"] }
 gethostname = "0.5.0"
 log = "0.4.22"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.124"
+serde_json = "1.0.125"
 thiserror = "1.0.63"
 tokio = { version = "1.39.2", features = ["full"] }
