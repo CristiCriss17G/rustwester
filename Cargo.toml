@@ -1,6 +1,6 @@
 [package]
 name = "rustwester"
-version = "0.2.1"
+version = "1.0.0"
 edition = "2021"
 authors = ['Cristian Iordachescu <cristian.iordachescu@ivfuture.uk>']
 
@@ -16,7 +16,7 @@ path = "src/main.rs"
 [dependencies]
 actix-web = "4.9.0"
 chrono = "0.4.38"
-clap = { version = "4.5.15", features = [
+clap = { version = "4.5.16", features = [
     "derive",
     "env",
     "cargo",
@@ -28,6 +28,6 @@ fern = { version = "0.6.2", features = ["colored"] }
 gethostname = "0.5.0"
 log = "0.4.22"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0.124"
+serde_json = "1.0"
 thiserror = "1.0.63"
-tokio = { version = "1.39.2", features = ["full"] }
+tokio = { version = "1.39.3", features = ["full"] }
