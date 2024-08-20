@@ -15,6 +15,48 @@ env:
   APP_NAME: rustwester
 
 jobs:
+  lint:
+    strategy:
+      matrix:
+        version:
+          - stable
+          - 1.75.0
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up system
+        run: sudo apt update && sudo apt upgrade -y && sudo apt install -y build-essential gcc-multilib clang lld
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ matrix.version }}
+          targets: x86_64-unknown-linux-gnu
+          components: clippy, rustfmt
+
+      - name: Cache cargo registry
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-${{ matrix.version }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.version }}-cargo-registry-
+
+      - name: Cache cargo build
+        uses: actions/cache@v4
+        with:
+          path: target
+          key: ${{ runner.os }}-${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-build-tests-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.version }}-x86_64-unknown-linux-gnu-cargo-build-tests-
+
+      - name: lint
+        run: cargo clippy
+
   tests:
     strategy:
       matrix:
@@ -54,6 +96,7 @@ jobs:
         with:
           toolchain: ${{ matrix.version }}
           targets: ${{ matrix.platform.target }}
+          components: clippy, rustfmt
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -72,7 +115,7 @@ jobs:
             ${{ runner.os }}-${{ matrix.version }}-${{ matrix.platform.target }}-cargo-build-tests-
 
       - name: Test
-        run: cargo test --target ${{ matrix.platform.target }}
+        run: cargo test --locked --target ${{ matrix.platform.target }}
 
   build:
     if: github.event_name == 'push'
@@ -100,7 +143,9 @@ jobs:
             target: i686-pc-windows-msvc
 
     runs-on: ${{ matrix.platform.os }}
-    needs: tests
+    needs:
+      - lint
+      - tests
 
     steps:
       - name: Checkout code

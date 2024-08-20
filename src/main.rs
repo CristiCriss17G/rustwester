@@ -7,11 +7,13 @@ use actix_web::middleware::{DefaultHeaders, Logger};
 use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use clap::{crate_version, Parser};
 use gethostname::gethostname;
-use log::{info, LevelFilter};
-use serde_json::json;
+use log::{debug, info, LevelFilter};
+use serde::Deserialize;
+use serde_json::{json, Value};
 use std::path::PathBuf;
+use tokio::sync::OnceCell;
 use utils::logging::log_init;
-use utils::structs::Result;
+use utils::structs::{Result, WesterError};
 
 #[derive(Parser, PartialEq)]
 #[command(name = "rustwester", author, version, about, long_about = None)]
@@ -24,13 +26,13 @@ struct Cli {
     #[arg(short, long, env, global = true, default_value = "9999")]
     port: u16,
 
-    /// Json response
-    #[arg(short, long, env, global = true)]
-    json: bool,
+    /// Don't allow json response
+    #[arg(short = 'j', long, env, global = true)]
+    no_json: bool,
 
     /// Turn debugging information on
     /// repetitive use increases verbosity, at most 2 times
-    #[arg(short='v', long="verbose", global = true, action = clap::ArgAction::Count)]
+    #[arg(short = 'v', long = "verbose", global = true, action = clap::ArgAction::Count)]
     debug: u8,
 
     /// Show logging information as json
@@ -43,96 +45,158 @@ struct Cli {
 }
 
 struct AppState {
-    json: bool,
+    allow_json: bool,
     html_hello: String,
 }
 
-#[get("/")]
-async fn hello(req: HttpRequest, data: web::Data<AppState>) -> impl Responder {
-    let user_agent = req
-        .headers()
-        .get(http::header::USER_AGENT)
-        .and_then(|h| h.to_str().ok())
-        .unwrap_or("Unknown");
+#[derive(Deserialize)]
+struct RequestInfo {
+    json: Option<String>,
+}
 
-    if data.json {
+static HOSTNAME: OnceCell<String> = OnceCell::const_new();
+
+async fn get_hostname() -> String {
+    HOSTNAME
+        .get_or_try_init(|| async {
+            let hostname = gethostname().to_string_lossy().to_string();
+            Ok::<_, WesterError>(hostname)
+        })
+        .await
+        .cloned()
+        .unwrap_or("Unknown".to_string())
+}
+
+async fn prepare_response(
+    json: bool,
+    data: &web::Data<AppState>,
+    user_agent: &str,
+    hello_str: Option<&str>,
+    echo_str: Option<Value>,
+) -> impl Responder {
+    let hostname = get_hostname().await;
+    if json {
+        debug!("Returning JSON response");
         let json_response = json!({
-            "hello": "world",
-            "hostname": gethostname().to_string_lossy().to_string(),
+            "response": echo_str.unwrap_or(json!(hello_str.unwrap_or("Hello world"))),
+            "hostname": hostname,
             "user_agent": user_agent
         });
         HttpResponse::Ok().json(json_response)
     } else {
-        let hostname = gethostname().to_string_lossy().to_string();
+        debug!("Returning HTML response");
         let html_response = data
             .html_hello
+            .replace("Hello world", hello_str.unwrap_or("Hello world"))
             .replace("{{hostname}}", &hostname)
             .replace("{{user_agent}}", user_agent)
-            .replace("{{echo}}", "<hr />");
-        HttpResponse::Ok().body(html_response)
+            .replace(
+                "{{echo}}",
+                echo_str
+                    .map_or("<hr />".to_string(), |v| {
+                        format!("<pre>{}</pre>\n    <hr />", v)
+                    })
+                    .as_str(),
+            );
+        HttpResponse::Ok()
+            .append_header(header::ContentType::html())
+            .body(html_response)
     }
+}
+
+#[get("/")]
+async fn hello(
+    req: HttpRequest,
+    info: web::Query<RequestInfo>,
+    data: web::Data<AppState>,
+) -> impl Responder {
+    let user_agent = req
+        .headers()
+        .get(header::USER_AGENT)
+        .and_then(|h| h.to_str().ok())
+        .unwrap_or("Unknown");
+
+    // Get the 'Accept' header from the request
+    let accept_header = req
+        .headers()
+        .get(header::ACCEPT)
+        .and_then(|v| v.to_str().ok());
+    debug!("Accept header: {:?}", accept_header);
+
+    prepare_response(
+        data.allow_json
+            && (info.json.is_some()
+                || accept_header.map_or(false, |v| v.contains("application/json"))),
+        &data,
+        user_agent,
+        None,
+        None,
+    )
+    .await
 }
 
 #[post("/echo")]
 async fn echo(
     req: HttpRequest,
+    info: web::Query<RequestInfo>,
     req_body: web::Json<serde_json::Value>,
     data: web::Data<AppState>,
 ) -> Result<impl Responder> {
     let user_agent = req
         .headers()
-        .get(http::header::USER_AGENT)
+        .get(header::USER_AGENT)
         .and_then(|h| h.to_str().ok())
         .unwrap_or("Unknown");
 
     let parsed = req_body.into_inner();
 
-    if data.json {
-        // Response as JSON
-        let json_response = json!({
-            "request body": parsed,
-            "hostname": gethostname().to_string_lossy().to_string(),
-            "user_agent": user_agent
-        });
-        Ok(HttpResponse::Ok().json(json_response))
-    } else {
-        // Response as text
-        let hostname = gethostname().to_string_lossy().to_string();
-        let html_response = data
-            .html_hello
-            .replace("{{hostname}}", &hostname)
-            .replace("{{user_agent}}", user_agent)
-            .replace(
-                "{{echo}}",
-                format!("<pre>{}</pre>\n    <hr />", parsed).as_str(),
-            );
-        Ok(HttpResponse::Ok().body(html_response))
-    }
+    // Get the 'Accept' header from the request
+    let accept_header = req
+        .headers()
+        .get(header::ACCEPT)
+        .and_then(|v| v.to_str().ok());
+    debug!("Accept header: {:?}", accept_header);
+
+    Ok(prepare_response(
+        data.allow_json
+            && (info.json.is_some()
+                || accept_header.map_or(false, |v| v.contains("application/json"))),
+        &data,
+        user_agent,
+        None,
+        Some(parsed),
+    )
+    .await)
 }
 
-async fn manual_hello(req: HttpRequest, data: web::Data<AppState>) -> impl Responder {
+async fn manual_hello(
+    req: HttpRequest,
+    info: web::Query<RequestInfo>,
+    data: web::Data<AppState>,
+) -> impl Responder {
     let user_agent = req
         .headers()
         .get(http::header::USER_AGENT)
         .and_then(|h| h.to_str().ok())
         .unwrap_or("Unknown");
 
-    if data.json {
-        HttpResponse::Ok().json(json!({
-            "hey": "there",
-            "hostname": gethostname().to_string_lossy().to_string(),
-            "user_agent": user_agent
-        }))
-    } else {
-        let hostname = gethostname().to_string_lossy().to_string();
-        let html_response = data
-            .html_hello
-            .replace("Hello world", "Hey there")
-            .replace("{{hostname}}", &hostname)
-            .replace("{{user_agent}}", user_agent)
-            .replace("{{echo}}", "<hr />");
-        HttpResponse::Ok().body(html_response)
-    }
+    // Get the 'Accept' header from the request
+    let accept_header = req
+        .headers()
+        .get(http::header::ACCEPT)
+        .and_then(|v| v.to_str().ok());
+    debug!("Accept header: {:?}", accept_header);
+
+    prepare_response(
+        data.allow_json
+            && (info.json.is_some()
+                || accept_header.map_or(false, |v| v.contains("application/json"))),
+        &data,
+        user_agent,
+        Some("Hey there!"),
+        None,
+    )
+    .await
 }
 
 #[tokio::main]
@@ -156,29 +220,18 @@ async fn main() -> Result<()> {
     info!("Starting server on {}:{}", cli.bind, cli.port);
 
     // Clone cli.json to move it into the closure
-    let json_data = cli.json.clone();
+    let json_data = !cli.no_json;
     const HTML_HELLO: &str = include_str!("hello.html");
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
-                json: json_data,
+                allow_json: json_data,
                 html_hello: HTML_HELLO.to_string(),
             }))
             .wrap(
                 DefaultHeaders::new()
                     .add(("X-Version", crate_version!()))
-                    .add((
-                        header::CONTENT_TYPE,
-                        format!(
-                            "{}; charset=utf-8",
-                            if json_data {
-                                "application/json"
-                            } else {
-                                "text/html"
-                            }
-                        ),
-                    ))
                     .add((header::SERVER, "rustwester"))
                     .add(("X-Powered-By", "actix-web")),
             )
