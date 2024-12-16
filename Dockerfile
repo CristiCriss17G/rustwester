@@ -33,7 +33,7 @@ RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/r
 # By specifying the "3.18" tag, it will use version 3.18 of alpine. If
 # reproducability is important, consider using a digest
 # (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
-FROM alpine:3.20 AS final
+FROM alpine:3.21 AS final
 LABEL org.opencontainers.image.maintainer="Cristian Iordachescu <iordachescu1996@outlook.com>"
 LABEL org.opencontainers.image.version="0.2.1"
 LABEL org.opencontainers.image.title="Rustwester"
