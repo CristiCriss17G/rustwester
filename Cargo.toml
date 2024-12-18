@@ -24,7 +24,7 @@ clap = { version = "4.5.23", features = [
     "wrap_help",
 ] }
 colored = { version = "2.1.0", features = ["no-color"] }
-fern = { version = "0.7.0", features = ["colored"] }
+fern = { version = "0.7.1", features = ["colored"] }
 gethostname = "0.5.0"
 log = "0.4.22"
 serde = { version = "1.0", features = ["derive"] }
