@@ -8,6 +8,7 @@ use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer
 use clap::{crate_version, Parser};
 use gethostname::gethostname;
 use log::{debug, info, LevelFilter};
+use maud::{html, Markup, DOCTYPE};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -46,7 +47,6 @@ struct Cli {
 
 struct AppState {
     allow_json: bool,
-    html_hello: String,
 }
 
 #[derive(Deserialize)]
@@ -67,9 +67,33 @@ async fn get_hostname() -> String {
         .unwrap_or("Unknown".to_string())
 }
 
+async fn render_markup(
+    hostname: &str,
+    user_agent: &str,
+    hello_str: Option<&str>,
+    echo_str: Option<Value>,
+) -> Markup {
+    html! {
+        (DOCTYPE)
+        head {
+            meta charset="utf-8";
+            meta name="viewport" content="width=device-width, initial-scale=1";
+            title { "Hello world!" }
+        }
+        body {
+            h1 { (hello_str.unwrap_or("Hello world")) " from " (hostname) }
+            p { "Your User agent is: " (user_agent) }
+            @if let Some(echo_value) = echo_str {
+                pre { (format!("{:#}", echo_value)) }
+            } @else {
+                hr;
+            }
+        }
+    }
+}
+
 async fn prepare_response(
     json: bool,
-    data: &web::Data<AppState>,
     user_agent: &str,
     hello_str: Option<&str>,
     echo_str: Option<Value>,
@@ -85,22 +109,10 @@ async fn prepare_response(
         HttpResponse::Ok().json(json_response)
     } else {
         debug!("Returning HTML response");
-        let html_response = data
-            .html_hello
-            .replace("Hello world", hello_str.unwrap_or("Hello world"))
-            .replace("{{hostname}}", &hostname)
-            .replace("{{user_agent}}", user_agent)
-            .replace(
-                "{{echo}}",
-                echo_str
-                    .map_or("<hr />".to_string(), |v| {
-                        format!("<pre>{}</pre>\n    <hr />", v)
-                    })
-                    .as_str(),
-            );
+        let html_response = render_markup(&hostname, user_agent, hello_str, echo_str).await;
         HttpResponse::Ok()
             .append_header(header::ContentType::html())
-            .body(html_response)
+            .body(html_response.into_string())
     }
 }
 
@@ -127,7 +139,6 @@ async fn hello(
         data.allow_json
             && (info.json.is_some()
                 || accept_header.map_or(false, |v| v.contains("application/json"))),
-        &data,
         user_agent,
         None,
         None,
@@ -161,7 +172,6 @@ async fn echo(
         data.allow_json
             && (info.json.is_some()
                 || accept_header.map_or(false, |v| v.contains("application/json"))),
-        &data,
         user_agent,
         None,
         Some(parsed),
@@ -191,7 +201,6 @@ async fn manual_hello(
         data.allow_json
             && (info.json.is_some()
                 || accept_header.map_or(false, |v| v.contains("application/json"))),
-        &data,
         user_agent,
         Some("Hey there!"),
         None,
@@ -221,13 +230,11 @@ async fn main() -> Result<()> {
 
     // Clone cli.json to move it into the closure
     let json_data = !cli.no_json;
-    const HTML_HELLO: &str = include_str!("hello.html");
 
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(AppState {
                 allow_json: json_data,
-                html_hello: HTML_HELLO.to_string(),
             }))
             .wrap(
                 DefaultHeaders::new()

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG RUST_VERSION=1.80
-ARG ALPINE_VERSION=3.20
+ARG RUST_VERSION=1.83
+ARG ALPINE_VERSION=3.21
 ARG APP_NAME=rustwester
 
 ################################################################################
@@ -13,7 +13,10 @@ ARG TARGET=x86_64-unknown-linux-musl
 WORKDIR /app
 
 # Install host build dependencies.
-RUN apk update && apk upgrade --no-cache && apk add --no-cache build-base clang lld musl-dev git file pkgconfig openssl-dev libcrypto3 libssl3 openssl-libs-static && rm -rf /var/cache/apk/*
+RUN apk update && apk upgrade --no-cache \
+    && apk add --no-cache build-base clang file git libcrypto3 libssl3 lld \
+        musl-dev openssl-dev openssl-libs-static pkgconfig \
+    && rm -rf /var/cache/apk/*
 
 # Copy Cargo.toml and Cargo.lock to cache dependencies.
 COPY Cargo.toml Cargo.lock ./
@@ -21,7 +24,7 @@ RUN mkdir src && touch src/main.rs && cargo fetch --locked
 
 COPY . .
 
-RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/release/$APP_NAME /bin/server
+RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/release/${APP_NAME} /bin/server
 
 ################################################################################
 # Create a new stage for running the application that contains the minimal
@@ -33,9 +36,9 @@ RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/r
 # By specifying the "3.18" tag, it will use version 3.18 of alpine. If
 # reproducability is important, consider using a digest
 # (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
-FROM alpine:3.21 AS final
+FROM alpine:${ALPINE_VERSION} AS final
 LABEL org.opencontainers.image.maintainer="Cristian Iordachescu <iordachescu1996@outlook.com>"
-LABEL org.opencontainers.image.version="0.2.1"
+LABEL org.opencontainers.image.version="2.0.0"
 LABEL org.opencontainers.image.title="Rustwester"
 LABEL org.opencontainers.image.description="This is a Dockerfile for running rustwester. For more information visit run with --help."
 
