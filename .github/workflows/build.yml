@@ -202,6 +202,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
+      attestations: write
       contents: write
 
     steps:
@@ -226,3 +228,8 @@ jobs:
           tag: v${{ steps.version.outputs.VERSION }}
           makeLatest: true
           name: ${{ github.event.repository.name }}-v${{ steps.version.outputs.VERSION }}
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: ./artifacts/*/${{ env.APP_NAME }}-*

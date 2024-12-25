@@ -5,10 +5,7 @@ use serde_json::json;
 
 #[actix_web::test]
 async fn test_hello_json_header() {
-    let app_state = web::Data::new(AppState {
-        allow_json: true,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: true });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(hello)).await;
 
@@ -34,10 +31,7 @@ async fn test_hello_json_header() {
 
 #[actix_web::test]
 async fn test_hello_json_query_param() {
-    let app_state = web::Data::new(AppState {
-        allow_json: true,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: true });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(hello)).await;
 
@@ -60,10 +54,7 @@ async fn test_hello_json_query_param() {
 
 #[actix_web::test]
 async fn test_hello_html_header() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::from("<html><body>{{hostname}} {{user_agent}} {{echo}}</body></html>"),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(hello)).await;
 
@@ -85,15 +76,12 @@ async fn test_hello_html_header() {
     let body_str = std::str::from_utf8(&body).unwrap();
     assert!(body_str.contains(format!("{}", gethostname().to_string_lossy().to_string()).as_str()));
     assert!(body_str.contains("Unknown"));
-    assert!(body_str.contains("<hr />"));
+    assert!(body_str.contains("<hr>"));
 }
 
 #[actix_web::test]
 async fn test_echo_json_header() {
-    let app_state = web::Data::new(AppState {
-        allow_json: true,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: true });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(echo)).await;
 
@@ -121,10 +109,7 @@ async fn test_echo_json_header() {
 
 #[actix_web::test]
 async fn test_echo_json_query_param() {
-    let app_state = web::Data::new(AppState {
-        allow_json: true,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: true });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(echo)).await;
 
@@ -151,10 +136,7 @@ async fn test_echo_json_query_param() {
 
 #[actix_web::test]
 async fn test_echo_html() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::from("<html><body>{{hostname}} {{user_agent}} {{echo}}</body></html>"),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(echo)).await;
 
@@ -177,15 +159,12 @@ async fn test_echo_html() {
     let body_str = std::str::from_utf8(&body).unwrap();
     assert!(body_str.contains(format!("{}", gethostname().to_string_lossy().to_string()).as_str()));
     assert!(body_str.contains("Unknown"));
-    assert!(body_str.contains("<pre>{\"key\":\"value\"}</pre>"));
+    assert!(body_str.contains("<pre>{\n  &quot;key&quot;: &quot;value&quot;\n}</pre>"));
 }
 
 #[actix_web::test]
 async fn test_manual_hello_json_header() {
-    let app_state = web::Data::new(AppState {
-        allow_json: true,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: true });
 
     let app = test::init_service(
         App::new()
@@ -216,10 +195,7 @@ async fn test_manual_hello_json_header() {
 
 #[actix_web::test]
 async fn test_manual_hello_json_query_param() {
-    let app_state = web::Data::new(AppState {
-        allow_json: true,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: true });
 
     let app = test::init_service(
         App::new()
@@ -247,12 +223,7 @@ async fn test_manual_hello_json_query_param() {
 
 #[actix_web::test]
 async fn test_manual_hello_html() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::from(
-            "<html><body>Hello world {{hostname}} {{user_agent}} {{echo}}</body></html>",
-        ),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(
         App::new()
@@ -279,15 +250,12 @@ async fn test_manual_hello_html() {
     assert!(body_str.contains("Hey there"));
     assert!(body_str.contains(format!("{}", gethostname().to_string_lossy().to_string()).as_str()));
     assert!(body_str.contains("Unknown"));
-    assert!(body_str.contains("<hr />"));
+    assert!(body_str.contains("<hr>"));
 }
 
 #[actix_web::test]
 async fn test_hello_json_header_no_json() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(hello)).await;
 
@@ -308,10 +276,7 @@ async fn test_hello_json_header_no_json() {
 
 #[actix_web::test]
 async fn test_hello_json_query_param_no_json() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(hello)).await;
 
@@ -329,10 +294,7 @@ async fn test_hello_json_query_param_no_json() {
 
 #[actix_web::test]
 async fn test_echo_json_header_no_json() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(echo)).await;
 
@@ -355,10 +317,7 @@ async fn test_echo_json_header_no_json() {
 
 #[actix_web::test]
 async fn test_echo_json_query_param_no_json() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(App::new().app_data(app_state.clone()).service(echo)).await;
 
@@ -380,10 +339,7 @@ async fn test_echo_json_query_param_no_json() {
 
 #[actix_web::test]
 async fn test_manual_hello_json_header_no_json() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(
         App::new()
@@ -409,10 +365,7 @@ async fn test_manual_hello_json_header_no_json() {
 
 #[actix_web::test]
 async fn test_manual_hello_json_query_param_no_json() {
-    let app_state = web::Data::new(AppState {
-        allow_json: false,
-        html_hello: String::new(),
-    });
+    let app_state = web::Data::new(AppState { allow_json: false });
 
     let app = test::init_service(
         App::new()
