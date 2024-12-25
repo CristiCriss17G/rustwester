@@ -1,6 +1,6 @@
 [package]
 name = "rustwester"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2021"
 authors = ['Cristian Iordachescu <cristian.iordachescu@ivfuture.uk>']
 
@@ -23,10 +23,11 @@ clap = { version = "4.5.23", features = [
     "unicode",
     "wrap_help",
 ] }
-colored = { version = "2.1.0", features = ["no-color"] }
+colored = { version = "2.2.0", features = ["no-color"] }
 fern = { version = "0.7.1", features = ["colored"] }
 gethostname = "0.5.0"
 log = "0.4.22"
+maud = { version = "0.26.0", features = ["actix-web"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 thiserror = "2.0.9"
