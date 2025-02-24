@@ -220,7 +220,7 @@ jobs:
           path: ./artifacts
 
       - name: Upload Release
-        uses: ncipollo/release-action@v1.14.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           artifacts: ./artifacts/*/${{ env.APP_NAME }}-*
           token: ${{ github.token }}
