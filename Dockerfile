@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
-ARG RUST_VERSION=1.83
-ARG ALPINE_VERSION=3.21
+ARG RUST_VERSION=1.92
+ARG ALPINE_VERSION=3.23
 ARG APP_NAME=rustwester
 
 ################################################################################
