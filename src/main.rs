@@ -185,7 +185,7 @@ async fn echo_form() -> impl Responder {
                     "      const txt = await res.text();\n",
                     "      out.textContent = txt;\n",
                     "    } catch (err) {\n",
-                    "      out.textContent = String(err);\n",
+                    "      out.textContent = (err && err.message) ? err.message : 'Request failed';\n",
                     "    }\n",
                     "  });\n",
                     "})();"
