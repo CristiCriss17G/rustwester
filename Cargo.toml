@@ -1,34 +1,41 @@
 [package]
 name = "rustwester"
-version = "2.0.0"
+version = "3.0.0"
 edition = "2021"
 authors = ['Cristian Iordachescu <cristian.iordachescu@ivfuture.uk>']
 
+[profile.dev]
+incremental = true # Compile your binary in smaller steps.
+# rustflags = ["-Zthreads=8"] # Better compile performance.
+
 [profile.release]
-debug = false # This strips the debug information
-lto = true
-opt-level = 3 # Optimize for minimal binary size
+codegen-units = 1 # Allows LLVM to perform better optimization.
+debug = false     # Disables debug symbols.
+lto = true        # Enables link-time-optimizations.
+opt-level = 3     # Prioritizes small binary size. Use `3` if you prefer speed.
+panic = "abort"   # Higher performance by disabling panic handlers.
+strip = true      # Ensures debug symbols are removed.
 
 [[bin]]
 name = "rustwester"
 path = "src/main.rs"
 
 [dependencies]
-actix-web = "4.9.0"
-chrono = "0.4.39"
-clap = { version = "4.5.23", features = [
+actix-web = "4.12.1"
+chrono = "0.4.42"
+clap = { version = "4.5.53", features = [
     "derive",
     "env",
     "cargo",
     "unicode",
     "wrap_help",
 ] }
-colored = { version = "2.2.0", features = ["no-color"] }
+colored = { version = "3.0.0", features = ["no-color"] }
 fern = { version = "0.7.1", features = ["colored"] }
-gethostname = "0.5.0"
-log = "0.4.22"
-maud = { version = "0.26.0", features = ["actix-web"] }
+gethostname = "1.1.0"
+log = "0.4.29"
+maud = { version = "0.27.0", features = ["actix-web"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-thiserror = "2.0.9"
-tokio = { version = "1.42.0", features = ["full"] }
+thiserror = "2.0.17"
+tokio = { version = "1.48.0", features = ["full"] }

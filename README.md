@@ -4,9 +4,9 @@ Simple rust cross platform executable to run a debugging web server
 
 > [!WARNING]
 >
-> Version with Rust 1.75 is for windows 7
+> Starting with version 3.0.0, support for Rust 1.75 and Windows 7 has been dropped.
 >
-> Version with Rust stable is for windows 8+
+> Previous versions are still available for older systems.
 
 ## Usage
 

@@ -8,7 +8,7 @@ use actix_web::{get, http, post, web, App, HttpRequest, HttpResponse, HttpServer
 use clap::{crate_version, Parser};
 use gethostname::gethostname;
 use log::{debug, info, LevelFilter};
-use maud::{html, Markup, DOCTYPE};
+use maud::{html, Markup, PreEscaped, DOCTYPE};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::path::PathBuf;
@@ -138,12 +138,65 @@ async fn hello(
     prepare_response(
         data.allow_json
             && (info.json.is_some()
-                || accept_header.map_or(false, |v| v.contains("application/json"))),
+                || accept_header.is_some_and(|v| v.contains("application/json"))),
         user_agent,
         None,
         None,
     )
     .await
+}
+
+#[get("/echo")]
+async fn echo_form() -> impl Responder {
+    let page = html! {
+        (DOCTYPE)
+        head {
+            meta charset="utf-8";
+            meta name="viewport" content="width=device-width, initial-scale=1";
+            title { "Echo Form" }
+            style { "body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding:2rem;} textarea{width:100%;max-width:640px;} pre{background:#f6f8fa;padding:1rem;border-radius:6px;overflow:auto;} label{display:block;margin-bottom:0.5rem;font-weight:600;} button{margin-top:0.75rem;padding:0.5rem 1rem;border:1px solid #ccc;border-radius:6px;background:#fff;cursor:pointer;} button:hover{background:#f3f4f6;}" }
+        }
+        body {
+            h1 { "Echo" }
+            p { "Submit a JSON payload to the POST /echo endpoint." }
+            form id="echo-form" {
+                label for="payload" { "JSON payload" }
+                textarea id="payload" name="payload" rows="8" { "{\n  \"message\": \"Hello from form\"\n}" }
+                button type="submit" { "Send" }
+            }
+            h2 { "Response" }
+            pre id="result" {}
+            script {
+                (PreEscaped(concat!(
+                    "(function(){\n",
+                    "  const form = document.getElementById('echo-form');\n",
+                    "  const out = document.getElementById('result');\n",
+                    "  form.addEventListener('submit', async (e) => {\n",
+                    "    e.preventDefault();\n",
+                    "    const text = document.getElementById('payload').value;\n",
+                    "    let body = text;\n",
+                    "    try { JSON.parse(text); } catch(_) { body = JSON.stringify({ message: text }); }\n",
+                    "    try {\n",
+                    "      const res = await fetch('/echo', {\n",
+                    "        method: 'POST',\n",
+                    "        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },\n",
+                    "        body: body\n",
+                    "      });\n",
+                    "      const txt = await res.text();\n",
+                    "      out.textContent = txt;\n",
+                    "    } catch (err) {\n",
+                    "      out.textContent = String(err);\n",
+                    "    }\n",
+                    "  });\n",
+                    "})();"
+                )))
+            }
+        }
+    };
+
+    HttpResponse::Ok()
+        .append_header(header::ContentType::html())
+        .body(page.into_string())
 }
 
 #[post("/echo")]
@@ -171,7 +224,7 @@ async fn echo(
     Ok(prepare_response(
         data.allow_json
             && (info.json.is_some()
-                || accept_header.map_or(false, |v| v.contains("application/json"))),
+                || accept_header.is_some_and(|v| v.contains("application/json"))),
         user_agent,
         None,
         Some(parsed),
@@ -200,7 +253,7 @@ async fn manual_hello(
     prepare_response(
         data.allow_json
             && (info.json.is_some()
-                || accept_header.map_or(false, |v| v.contains("application/json"))),
+                || accept_header.is_some_and(|v| v.contains("application/json"))),
         user_agent,
         Some("Hey there!"),
         None,
@@ -245,6 +298,7 @@ async fn main() -> Result<()> {
             .wrap(Logger::default())
             .service(hello)
             .service(echo)
+            .service(echo_form)
             .route("/hey", web::get().to(manual_hello))
     })
     .bind((cli.bind, cli.port))?
