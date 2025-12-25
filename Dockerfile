@@ -38,7 +38,7 @@ RUN cargo build --locked --release --target ${TARGET} && cp ./target/${TARGET}/r
 # (e.g., alpine@sha256:664888ac9cfd28068e062c991ebcff4b4c7307dc8dd4df9e728bedde5c449d91).
 FROM alpine:${ALPINE_VERSION} AS final
 LABEL org.opencontainers.image.maintainer="Cristian Iordachescu <iordachescu1996@outlook.com>"
-LABEL org.opencontainers.image.version="2.0.0"
+LABEL org.opencontainers.image.version="3.0.0"
 LABEL org.opencontainers.image.title="Rustwester"
 LABEL org.opencontainers.image.description="This is a Dockerfile for running rustwester. For more information visit run with --help."
 
