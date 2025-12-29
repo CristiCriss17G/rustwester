@@ -213,7 +213,7 @@ jobs:
         run: echo "VERSION=$(cat Cargo.toml | grep version | head -1 | awk -F' ' '{print $3}' | sed 's/\"//g')" >> $GITHUB_OUTPUT
 
       - name: Download artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: "**-artifact"
           path: ./artifacts
